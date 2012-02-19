@@ -6,7 +6,11 @@ use Hash::Storage;
 
 plugin 'CSRFProtect';
 plugin 'mail';
-plugin  'recaptcha';
+plugin  'recaptcha' => { 
+    public_key  => '',
+    private_key => '',
+    lang        => 'en'
+};
 
 my $st = Hash::Storage->new( 
     driver => [ 'OneFile' => { 
@@ -17,7 +21,7 @@ my $st = Hash::Storage->new(
 
 my $secure_routes = plugin 'UserManager', {
     storage          => $st,                     # Own storage
-    captcha          => 1,                       #  
+    captcha          => 0,                       #  
     email_confirm    => 1,                       # Send confirmation email
     admin_confirm    => 'koorchik@gmail.com',    # Admin email
     password_crypter => sub { $_[0] },           # Save Plain passwords
@@ -33,15 +37,15 @@ my $secure_routes = plugin 'UserManager', {
 };
 
 
-$secure_routes->get( '/messages', sub {
-    my $self = shift;
-    $self->render_text('My messages here!');
-});
-
 get '/' => sub {
     my $self = shift;
     $self->redirect_to('auth_create_form');
 };
+
+$secure_routes->get( '/messages', sub {
+    my $self = shift;
+    $self->render_text('My messages here!');
+});
 
 app->start;
       

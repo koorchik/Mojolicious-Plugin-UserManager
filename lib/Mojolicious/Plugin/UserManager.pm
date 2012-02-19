@@ -66,7 +66,9 @@ sub register {
     })->name('auth_delete');
 
     $r->get('/registration')->to(cb=>sub {
-        $self->_render_template( $_[0], 'user_create_form' );
+        my $c = shift;
+        $c->stash( captcha => $self->config->{captcha} );
+        $self->_render_template( $c, 'user_create_form' );
     })->name('user_create_form');
     
     $r->post('/registration')->to(cb=>sub {
@@ -101,6 +103,13 @@ sub _user_create {
     
     
     if ( $result->success ) {
+        # Check captcha 
+        if ( $self->config->{captcha} && ! $c->recaptcha) {
+            $c->flash(%$u_data, error => $c->stash('recaptcha_error') );
+            $c->redirect_to('user_create_form');    
+            return;
+        }
+        
         # Check that user does not exists
         if ( $self->storage->get($u_data->{user_id}) ) {
             $c->flash(%$u_data, error => 'Such user already exists' );
