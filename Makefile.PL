@@ -11,6 +11,7 @@ WriteMakefile(
       'Mojolicious'    => '2.0',
       'Email::Valid'   => 0,
       'Validate::Tiny' => 0.08,
+      'Hash::Storage'  => 0,
   },
   test         => {TESTS => 't/*.t'}
 );

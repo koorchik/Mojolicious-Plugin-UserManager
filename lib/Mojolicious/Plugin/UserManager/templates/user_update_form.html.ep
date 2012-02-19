@@ -16,9 +16,9 @@
     
 </head>
 <body>
-    <h1>User Settings</h1>
+    <h1><%= $user_id %> settings</h1>
 
-    <%= form_for user_update => (method => 'post') => begin %>
+    <%= form_for user_update => {user_id => $user_id} => (method => 'post') => begin %>
     
     <span class='red_msg' ><%= flash 'error' %></span>
     <span class='green_msg' ><%= flash 'notice'%></span>
@@ -28,19 +28,19 @@
             <% for my $field ( @{ all_fields_schema() } ) { %>
                 <tr>
                     <td class='fieldname'><%= $field->{label} %></td>
-                    <td><input type='text' name='<%= $field->{name} %>' value="<%= flash $field->{name} %>" /></td>
+                    <td><input type='text' name='<%= $field->{name} %>' value="<%= user_data($field->{name}) %>" /></td>
                 </tr>
             <% } %>
             
             <tr>
                 <td></td>
-                <td style='padding-top: 7px;'><input type='submit' value='Register' /></td>
+                <td style='padding-top: 7px;'><input type='submit' value='Update' /></td>
             </tr>
+            
             <tr>
                 <td></td>
-                <td><a href='<%= url_for "auth_create_form" %>'> Back to Login </a></td>
+                <td><a href='<%= url_for "auth_delete" %>'>Logout</a></td>
             </tr>
-
         </table>
 
     </div>
