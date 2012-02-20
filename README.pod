@@ -38,6 +38,27 @@ Mojolicious::Plugin::UserManager - User Manager for Mojolicious applications
 
 Mojolicious::Plugin::UserManager - User Manager for Mojolicious applications.
 
+=head1 HELPERS
+
+=head2 user_data
+
+Use this helper in your controllers/templates to access user_data
+
+    <h1>"Welcome, <%= user_data("user_id") %> </h1>
+    
+=head2 schema_for_field
+
+You can access field schema by name in your controller/templates
+
+	<%= schema_for_field('user_id')->{label} %>: <%= user_data("user_id") %>
+
+=head2 all_fields_schema
+
+Returns arrayref with fields schema (in the same format as "fields" config option)
+      <% for my $field ( @{ all_fields_schema() } ) { %>
+           <%= $field->{label} %>: <input type='text' name='<%= $field->{name} %>'" />
+      <% } %>
+
 =head1 ROUTES
 
 Plugin add several routes. You can use them by names in your application.
