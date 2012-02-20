@@ -1,0 +1,124 @@
+=head1 NAME
+
+Mojolicious::Plugin::UserManager - User Manager for Mojolicious applications
+
+=head1 SYNOPSIS
+
+    # Mojolicious::Lite
+
+    my $secure_routes = plugin 'UserManager', {
+        storage          => $st,                     # Own storage
+        captcha          => 0,                       # Enables captcha for registration ( requires Mojolicious::Plugin::Recaptcha)
+        email_confirm    => 1,                       # Send confirmation email (requires Mojolicious::Plugin::Mail)
+        admin_confirm    => 'koorchik@gmail.com',    # Admin email (requires Mojolicious::Plugin::Mail)
+        password_crypter => sub { $_[0] },           # Save Plain passwords (default MD5)
+        site_url         => 'http://localhost:3000',
+        
+        fields => [
+            { name => 'user_id',      label => 'User ID' },
+            { name => 'email',        label => 'Email' },
+            { name => 'password',     label => 'Password',    check => [ is_required, sub { length($_[0]) < 8 ? "Minimum password length - 8 " : undef; } ]},
+            { name => 'first_name',   label => 'First Name',  check => [ is_required, is_like(qr/^\w+$/) ] },
+            { name => 'last_name',    label => 'Last Name',   check => [ is_required, is_like(qr/^\w+$/) ] },
+        ]
+    };
+    
+    get '/' => sub {
+           my $self = shift;
+        $self->redirect_to('auth_create_form');
+    };
+
+    # Only authenticated users can this
+    $secure_routes->get( '/messages', sub {
+        my $self = shift;
+        $self->render_text('My messages here!');
+    });
+
+=head1 DESCRIPTION
+
+Mojolicious::Plugin::UserManager - User Manager for Mojolicious applications.
+
+=head1 ROUTES
+
+Plugin add several routes. You can use them by names in your application.
+
+=head2 auth_create_form
+
+Show authentication(Login) form. For example, if you want redirect user to login screen - $self->redirect_to('auth_create_form');
+
+=head2 auth_delete 
+
+Delete user authentication(Logout)
+
+=head2 user_create_form
+
+Show user create form (Registration form)
+
+=head2 user_update_form, user_id => $user_id
+
+Show user update form (User settings form)
+
+=head1 OPTIONS
+
+=head2 storage
+
+Hash::Storage object (optional)
+
+=head2 captcha (default 0)
+
+Enables CAPTCHA for registration. 
+
+Requires Mojolicious::Plugin::Recaptcha (do not forget to config it)
+
+=head2 email_confirm (default 0)
+
+Send email to user for activation.
+
+Requires Mojolicious::Plugin::Mail (do not forget to config it)
+
+=head2 admin_confirm (default '')
+
+Option contains admin email. After each user registration admin will receive a link for user activation.
+
+Requires Mojolicious::Plugin::Mail (do not forget to config it)
+
+=head2 password_crypter
+
+Reference to a password encrypting subroutine
+Default is md5 crypter:
+
+    sub {
+        my $pass = shift;
+        my $crypted_pass = md5_hex($pass);
+        return $crypted_pass; 
+    }
+
+=head2 site_url (default 'http://localhost:3000')
+
+site_url is needed only for activation urls
+
+=head2 fields
+
+fields - array of fields schemas
+    {
+    	name  - Internal field name to store in DB
+        check - Field validation callback. Takes field value and returns undef on success and error message on error. You can use Validate::Tiny helpers.
+        label - Name that will be shown to user
+    }
+
+=head1 METHODS
+
+L<Mojolicious::Plugin::UserManager> inherits all methods from
+L<Mojolicious::Plugin> and implements the following new ones.
+
+=head2 C<register>
+
+  $plugin->register;
+
+Register plugin in L<Mojolicious> application.
+
+=head1 SEE ALSO
+
+L<Mojolicious>, L<Mojolicious::Guides>, L<http://mojolicio.us>.
+
+=cut

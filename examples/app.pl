@@ -21,7 +21,7 @@ my $st = Hash::Storage->new(
 
 my $secure_routes = plugin 'UserManager', {
     storage          => $st,                     # Own storage
-    captcha          => 1,                       # Enables captcha for registration ( requires Mojolicious::Plugin::Recaptcha)
+    captcha          => 0,                       # Enables captcha for registration ( requires Mojolicious::Plugin::Recaptcha)
     email_confirm    => 1,                       # Send confirmation email (requires Mojolicious::Plugin::Mail)
     admin_confirm    => 'koorchik@gmail.com',    # Admin email (requires Mojolicious::Plugin::Mail)
     password_crypter => sub { $_[0] },           # Save Plain passwords (default MD5)
@@ -30,7 +30,7 @@ my $secure_routes = plugin 'UserManager', {
     fields => [
         { name => 'user_id',      label => 'User ID' },
         { name => 'email',        label => 'Email' },
-        { name => 'password',     label => 'Password',    check => [is_required, sub { length($_[0]) <= 8 ? "Minimum password length - 8 " : undef; } ]},
+        { name => 'password',     label => 'Password',    check => [ is_required, sub { length($_[0]) < 8 ? "Minimum password length - 8 " : undef; } ]},
         { name => 'first_name',   label => 'First Name',  check => [ is_required, is_like(qr/^\w+$/) ] },
         { name => 'last_name',    label => 'Last Name',   check => [ is_required, is_like(qr/^\w+$/) ] },
     ]
