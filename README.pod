@@ -55,6 +55,7 @@ You can access field schema by name in your controller/templates
 =head2 all_fields_schema
 
 Returns arrayref with fields schema (in the same format as "fields" config option)
+
       <% for my $field ( @{ all_fields_schema() } ) { %>
            <%= $field->{label} %>: <input type='text' name='<%= $field->{name} %>'" />
       <% } %>
