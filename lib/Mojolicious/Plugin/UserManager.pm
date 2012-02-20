@@ -159,7 +159,7 @@ sub _user_create {
     } else {
         my $errors_hash = $result->error;
         my ($field) = keys %$errors_hash;   
-        $c->flash( %$u_data, error => qq#Field "$field" $errors_hash->{$field}# );
+        $c->flash( %$u_data, error => qq#Error in field "$field": $errors_hash->{$field}# );
         $c->redirect_to('user_create_form');
     }
 }
@@ -201,7 +201,7 @@ sub _user_activate {
     
     if ( $u_data ) {
         $self->storage->set($u_data->{user_id}, {_is_active => 1});
-        $c->render_text("User [$u_data->{user_id} activated]");
+        $c->render_text("User [$u_data->{user_id}] activated");
     } else {
         $c->render_text("Wrong activation code");
     }
@@ -229,7 +229,7 @@ sub _auth_create {
         # Check that user is activated
         my $u_data = $self->storage->get($user_id);
         unless ( $u_data->{_is_active} ) {
-            $c->flash( error => 'User was not activated!' );
+            $c->flash( error => 'User is not active!' );
             $c->redirect_to('auth_create_form');
             return;
         }
@@ -325,12 +325,6 @@ sub _apply_conf_defaults {
         $fields{ $_->{name} }++;
     }
 
-    $self->_merge_field_schema({
-        name  => 'user_id',
-        label => 'User ID',
-        check => [is_required, is_like(qr/^\w+$/)]
-    });
-    
     $self->_merge_field_schema( {
         name  => 'email',
         label => 'Email',
@@ -343,6 +337,12 @@ sub _apply_conf_defaults {
         name  => 'password',
         label => 'Password',
         check => is_required
+    });
+    
+	$self->_merge_field_schema({
+        name  => 'user_id',
+        label => 'Login',
+        check => [is_required, is_like(qr/^\w+$/)]
     });
 }
 

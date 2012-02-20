@@ -33,7 +33,7 @@
             <% } %>
             
             <tr>
-                <td colspan="2"><%= recaptcha_html if $captcha %></td>
+                <td colspan="2"><%= recaptcha_html() if $captcha %></td>
             </tr>
             
             <tr>

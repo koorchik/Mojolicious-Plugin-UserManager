@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 use Mojolicious::Lite;
-use lib qw{lib ../Hash-Storage/lib};
 use Validate::Tiny qw/:all/;
 use Hash::Storage;
+use lib '../lib';
 
 plugin 'CSRFProtect';
 plugin 'mail';
@@ -21,16 +21,16 @@ my $st = Hash::Storage->new(
 
 my $secure_routes = plugin 'UserManager', {
     storage          => $st,                     # Own storage
-    captcha          => 0,                       #  
-    email_confirm    => 1,                       # Send confirmation email
-    admin_confirm    => 'koorchik@gmail.com',    # Admin email
-    password_crypter => sub { $_[0] },           # Save Plain passwords
+    captcha          => 1,                       # Enables captcha for registration ( requires Mojolicious::Plugin::Recaptcha)
+    email_confirm    => 1,                       # Send confirmation email (requires Mojolicious::Plugin::Mail)
+    admin_confirm    => 'koorchik@gmail.com',    # Admin email (requires Mojolicious::Plugin::Mail)
+    password_crypter => sub { $_[0] },           # Save Plain passwords (default MD5)
     site_url         => 'http://localhost:3000',
     
     fields => [
         { name => 'user_id',      label => 'User ID' },
         { name => 'email',        label => 'Email' },
-        { name => 'password',     label => 'Password' },
+        { name => 'password',     label => 'Password',    check => [is_required, sub { length($_[0]) <= 8 ? "Minimum password length - 8 " : undef; } ]},
         { name => 'first_name',   label => 'First Name',  check => [ is_required, is_like(qr/^\w+$/) ] },
         { name => 'last_name',    label => 'Last Name',   check => [ is_required, is_like(qr/^\w+$/) ] },
     ]
