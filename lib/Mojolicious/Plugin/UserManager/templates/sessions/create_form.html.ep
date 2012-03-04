@@ -1,0 +1,36 @@
+<h1>Login Screen</h1>
+
+<%= form_for auth_create => (method => 'post') => begin %>
+
+<span class='red_msg' ><%= flash 'error' %></span>
+<span class='green_msg' ><%= flash 'notice'%></span>
+
+
+<div class='fieldset' style='width: 400px'>
+    <table class='form'>
+        <tr>
+            <td class='fieldname'><%= schema_for_field('user_id')->{label} %></td>
+
+            <td><input type='text' name='user_id' value="<%= flash 'user_id' %>" /></td>
+        </tr>
+
+        <tr>
+            <td class='fieldname'><%= schema_for_field('password')->{label} %></td>
+
+            <td><input type='password' name='password' value="<%= flash 'password' %>" /></td>
+        </tr>
+
+        <tr>
+            <td></td>
+            <td style='padding-top: 7px;'><input type='submit' value='Login' /></td>
+
+        </tr>
+        <tr>
+            <td></td>
+            <td><a href='<%= url_for "user_create_form" %>'>Registration</a></td>
+        </tr>
+
+    </table>
+
+</div>
+<% end %>

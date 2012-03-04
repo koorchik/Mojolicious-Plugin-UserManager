@@ -1,0 +1,34 @@
+<h1>Registration</h1>
+
+<%= form_for user_create => (method => 'post') => begin %>
+
+<span class='red_msg' ><%= flash 'error' %></span>
+<span class='green_msg' ><%= flash 'notice'%></span>
+
+<div class='fieldset' style='width: 400px'>
+    <table class='form'>
+        <% for my $field ( @{ all_fields_schema() } ) { %>
+            <tr>
+                <td class='fieldname'><%= $field->{label} %></td>
+                <td><%=  html_for_field($field->{name}) %></td>
+            </tr>
+        <% } %>
+        
+        <tr>
+            <td colspan="2"><%= recaptcha_html() if $captcha %></td>
+        </tr>
+        
+        <tr>
+            <td></td>
+            <td style='padding-top: 7px;'><input type='submit' value='Register' /></td>
+        </tr>
+        
+        <tr>
+            <td></td>
+            <td><a href='<%= url_for "auth_create_form" %>'> Back to Login </a></td>
+        </tr>
+
+    </table>
+
+</div>
+<% end %>
