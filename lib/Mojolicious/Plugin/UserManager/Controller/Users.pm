@@ -13,13 +13,13 @@ use File::Spec::Functions qw/rel2abs/;
 sub create_form {
     my $self = shift;
     $self->stash( captcha => $self->um_config->{captcha} );
-    $self->render( 'users/create_form' );
+    $self->render( 'users/create_form', layout => $self->um_config->{layout} );
 }
 
 
 sub update_form {
     my $self = shift;
-    $self->render( 'users/update_form' );    
+    $self->render( 'users/update_form', layout => $self->um_config->{layout} );    
 }
 
 sub create {

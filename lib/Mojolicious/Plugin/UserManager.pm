@@ -143,6 +143,7 @@ sub _apply_conf_defaults {
     my $conf = $self->config();
     
     $conf->{captcha}          //= 0;
+    $conf->{layout}           //= 'user_manager';
     $conf->{email_confirm}    //= 0;
     $conf->{admin_confirm}    //= '';
     $conf->{password_crypter} //= sub { md5_hex( $_[0] ) };

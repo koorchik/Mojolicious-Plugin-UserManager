@@ -10,7 +10,7 @@ use File::Spec::Functions qw/rel2abs/;
 
 sub create_form  {
     my ( $self, $template ) = @_; 
-    $self->render('sessions/create_form');
+    $self->render('sessions/create_form', layout => $self->um_config->{layout} );
 }
 
 sub create {
