@@ -21,7 +21,7 @@ sub create {
     if ( $self->_check_user_password( $user_id, $pass ) ) {
 
         # Check that user is activated
-        my $u_data = $self->storage->get($user_id);
+        my $u_data = $self->um_storage->get($user_id);
         unless ( $u_data->{_is_active} ) {
             $self->flash( error => 'User is not active!' );
             $self->redirect_to('auth_create_form');
