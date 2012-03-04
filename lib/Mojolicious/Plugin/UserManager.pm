@@ -8,8 +8,8 @@ use strict;
 use warnings;
 
 use Carp qw/croak/;
-use Digest::MD5 qw/md5_hex/;
 use Validate::Tiny qw/:all/;
+use Digest::MD5 qw/md5_hex/;
 use Email::Valid;
 use Hash::Storage;
 use File::Basename qw/dirname/;

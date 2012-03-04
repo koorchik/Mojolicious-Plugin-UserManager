@@ -2,8 +2,7 @@
 
 <%= form_for user_create => (method => 'post') => begin %>
 
-<span class='red_msg' ><%= flash 'error' %></span>
-<span class='green_msg' ><%= flash 'notice'%></span>
+<%= include 'um_msg' %>
 
 <div class='fieldset' style='width: 400px'>
     <table class='form'>

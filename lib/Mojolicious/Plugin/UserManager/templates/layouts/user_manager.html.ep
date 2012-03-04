@@ -2,18 +2,6 @@
 <html>
 <head>
     <title><%= title %></title>
-    
-    <style type="text/css">
-        .green_msg {
-            color:green;
-            font-weight:bold;
-        }
-        .red_msg {
-            color:red;
-            font-weight:bold;
-        }
-    </style>
-    
 </head>
     <body>
         <%= content %>
