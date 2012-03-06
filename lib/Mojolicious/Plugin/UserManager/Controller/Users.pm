@@ -10,6 +10,12 @@ use Digest::MD5 qw/md5_hex/;
 
 sub create_form {
     my $self = shift;
+    
+    if ( my $user_id = $self->session('user_id') ) {
+        $self->redirect_to( $self->um_config->{home_url}, user_id => $user_id );
+        return;
+    }
+    
     $self->stash( captcha => $self->um_config->{captcha} );
     $self->render( 'users/create_form', layout => $self->um_config->{layout} );
 }
@@ -78,6 +84,12 @@ sub create {
         # Save user
         $self->um_storage->set( $u_data->{user_id}, $u_data );
 
+        
+        # Call on_registration callback
+        my $on_reg_cb = ref( $self->um_config->{on_registration} ) eq 'CODE' ? $self->um_config->{on_registration} : '';
+        $on_reg_cb->($self, $u_data) if $on_reg_cb; 
+        
+
         # Redirect to login form
         $self->flash( notice => 'Registration completed' );
         $self->redirect_to('auth_create_form');
@@ -144,7 +156,7 @@ sub _validate_fields {
     my $schema = $self->um_config->{fields};
     my @fields = map { $_->{name} ~~ $skip ? () : $_->{name} } @$schema;
     my @checks = map { $_->{name} => $_->{check} } grep { $_->{check} } @$schema;
-    my %input  = map { $_, $self->param($_) } @fields;
+    my %input  = map { $_, ($self->param($_)//'') } @fields;
 
     return Validate::Tiny->new( \%input, { fields => \@fields, checks => \@checks } );
 }

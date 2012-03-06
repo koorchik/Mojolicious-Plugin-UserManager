@@ -10,6 +10,12 @@ use File::Spec::Functions qw/rel2abs/;
 
 sub create_form {
     my ( $self, $template ) = @_;
+    
+    if ( my $user_id = $self->session('user_id') ) {
+        $self->redirect_to( $self->um_config->{home_url}, user_id => $user_id );
+        return;
+    }
+    
     $self->render( 'sessions/create_form', layout => $self->um_config->{layout} );
 }
 
@@ -29,7 +35,7 @@ sub create {
         }
 
         $self->session( 'user_id' => $user_id );
-        $self->redirect_to( 'user_update_form', user_id => $user_id );
+        $self->redirect_to( $self->um_config->{home_url}, user_id => $user_id );
     } else {
         $self->flash( error => 'Wrong user or password!' );
         $self->redirect_to('auth_create_form');

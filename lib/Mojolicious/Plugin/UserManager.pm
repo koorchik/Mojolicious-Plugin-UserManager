@@ -59,7 +59,8 @@ sub register {
         
         
         my $name  = $field_schema->{name};
-        my $value = $c->flash($name) // '';
+        my $value = $c->flash($name) // ${ $c->user_data() || {} }{$name} // '';
+
         my $type  = $field_schema->{type} || 'text';
         my $tag_options = $field_schema->{tag_options} || []; 
         
@@ -83,8 +84,7 @@ sub register {
                 @options = (value => $value, @$tag_options );
             }
         } 
-         
-        
+                
         my $tag_helper = ( $field_schema->{type} || 'text') . '_field';
         return $c->$tag_helper( $name, @options );
     } );
@@ -111,6 +111,7 @@ sub register {
     
     # Guest routes
     my $r = $app->routes;
+    
     $r->get('/login') ->to( 'sessions#create_form', namespace  => $namespace )->name('auth_create_form');
     $r->post('/login')->to( 'sessions#create',      namespace  => $namespace )->name('auth_create');
     $r->any('/logout')->to( 'sessions#delete',      namespace  => $namespace )->name('auth_delete');
@@ -149,6 +150,8 @@ sub _apply_conf_defaults {
     $conf->{password_crypter} //= sub { md5_hex( $_[0] ) };
     $conf->{fields}           //= [];
     $conf->{site_url}         //= 'http://localhost:3000/';
+    $conf->{home_url}         //= 'user_update_form',
+    
 
     $conf->{storage} //= Hash::Storage->new(driver => [ 
         'OneFile' => {
@@ -158,9 +161,9 @@ sub _apply_conf_defaults {
     );
 
     my %fields;
-    foreach ( @{ $conf->{fields} } ) {
-        croak "Field [$_->{name}] duplication" if $fields{ $_->{name} };
-        $fields{ $_->{name} }++;
+    foreach my $f ( @{ $conf->{fields} } ) {
+        croak "Field [$_->{name}] duplication" if $fields{ $f->{name} };
+        $fields{ $f->{name} }++;
     }
 
     $self->_merge_field_schema( {
