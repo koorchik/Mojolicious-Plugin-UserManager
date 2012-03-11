@@ -10,8 +10,9 @@ use Digest::MD5 qw/md5_hex/;
 
 sub create_form {
     my $self = shift;
+    my $user_id = $self->session('user_id');
     
-    if ( my $user_id = $self->session('user_id') ) {
+    if ( $user_id && $self->session('user_type') eq $self->stash('user_type') ) {
         $self->redirect_to( $self->um_config->{home_url}, user_id => $user_id );
         return;
     }
@@ -149,6 +150,7 @@ sub activate {
         $self->render_text("Wrong activation code");
     }
 }
+
 
 sub _validate_fields {
     my ( $self, $skip ) = @_;

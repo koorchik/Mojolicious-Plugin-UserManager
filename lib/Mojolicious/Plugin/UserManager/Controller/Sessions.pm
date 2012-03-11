@@ -11,7 +11,9 @@ use File::Spec::Functions qw/rel2abs/;
 sub create_form {
     my ( $self, $template ) = @_;
     
-    if ( my $user_id = $self->session('user_id') ) {
+    my $user_id = $self->session('user_id');
+    
+    if ( $user_id && $self->session('user_type') eq $self->stash('user_type') ) {
         $self->redirect_to( $self->um_config->{home_url}, user_id => $user_id );
         return;
     }
@@ -34,7 +36,10 @@ sub create {
             return;
         }
 
-        $self->session( 'user_id' => $user_id );
+        my $user_type = $self->stash('user_type');
+        die "Cannot work without user_type" unless $user_type;
+        
+        $self->session( 'user_id' => $user_id, 'user_type' => $user_type );
         $self->redirect_to( $self->um_config->{home_url}, user_id => $user_id );
     } else {
         $self->flash( error => 'Wrong user or password!' );
@@ -50,9 +55,9 @@ sub delete {
 sub check {
     my ($self) = @_;
     $self->stash( 'user_id' => '' );
-    my $user_id = $self->session('user_id');
+    my $user_id   = $self->session('user_id');
 
-    if ($user_id) {
+    if ( $user_id && $self->session('user_type') eq $self->stash('user_type') ) {
         $self->stash( 'user_id' => $user_id );
         return 1;
     } else {

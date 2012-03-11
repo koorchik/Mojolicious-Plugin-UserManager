@@ -1,7 +1,7 @@
 package Mojolicious::Plugin::UserManager;
 use Mojo::Base 'Mojolicious::Plugin';
-has 'config';
-has 'storage';
+has 'configs';
+has 'storages';
 
 use v5.10;
 use strict;
@@ -12,16 +12,42 @@ use Validate::Tiny qw/:all/;
 use Digest::MD5 qw/md5_hex/;
 use Email::Valid;
 use Hash::Storage;
+use List::MoreUtils qw/uniq/;
 use File::Basename qw/dirname/;
 use File::Spec::Functions qw/rel2abs catdir/;
+use File::Path qw/make_path/;
 
+use DDP;
 our $VERSION = '0.01';
 
 sub register {
-    my ( $self, $app, $conf ) = @_;
-    $self->config($conf);
-    $self->_apply_conf_defaults($app);
-    $self->storage($conf->{storage});
+    my ( $self, $app, $configs ) = @_;
+    
+    my @configs;
+    if ( ref $configs eq 'ARRAY' ) {
+       @configs = @$configs;  
+    } elsif ( ref( $configs) eq 'HASH' ) {
+        push @configs, $configs;
+    } else {
+        push @configs, {};
+    }
+    
+    $configs[0]{user_type} = 'default' if @configs == 1; 
+    
+    my %configs;
+    my %storages;
+    foreach my $conf ( @configs ) {
+        croak "You must supply [type] for each users schema" unless $conf->{user_type};
+        croak "User type must be uniq" if exists $configs{ $conf->{user_type} };
+        
+        $self->_apply_conf_defaults($app, $conf);
+        $configs{ $conf->{user_type} } = $conf;
+        $storages{ $conf->{user_type} } = $conf->{storage};
+        
+    }
+    
+    $self->configs(\%configs);
+    $self->storages(\%storages);
     
     
      # Append "templates" and "public" directories
@@ -31,11 +57,15 @@ sub register {
     
     
     # Register "all_fields_schema" helper 
-    $app->helper( all_fields_schema => sub { $conf->{fields} });
+    $app->helper( all_fields_schema => sub {
+        my ($c) = @_;
+        return $c->um_config->{fields};
+    });
 
     # Register "schema_for_field" helper    
     $app->helper( schema_for_field => sub {
-        my ($c, $field_name) = @_;
+        my ($c, $field_name ) = @_;
+        my $conf = $c->um_config;
         my ($field_schema) = grep {$_->{name} eq $field_name} @{$conf->{fields}};
         return $field_schema;
     } );
@@ -43,18 +73,23 @@ sub register {
     
     # Register "um_storage" helper    
     $app->helper( um_storage => sub {
-        return $self->storage();
+        my ($c, $user_type) = @_;
+        my $conf = $c->um_config($user_type);
+        return $conf->{storage};
     } );
     
     
     # Register "um_config" helper    
     $app->helper( um_config => sub {
-        return $self->config();
+        my ($c, $user_type) = @_;
+        return $self->_get_config_by_type($c, $user_type);
     } );
     
     # Register "schema_for_field" helper    
     $app->helper( html_for_field => sub {
         my ($c, $field_name) = @_;
+        my $conf = $c->um_config;
+        
         my ($field_schema) = grep {$_->{name} eq $field_name} @{$conf->{fields}};
         
         
@@ -62,7 +97,9 @@ sub register {
         my $value = $c->flash($name) // ${ $c->user_data() || {} }{$name} // '';
 
         my $type  = $field_schema->{type} || 'text';
-        my $tag_options = $field_schema->{tag_options} || []; 
+        my $tag_options = $field_schema->{tag_options};
+        $tag_options = $tag_options->($c) if ref($tag_options) eq 'CODE';
+        $tag_options ||= []; 
         
         my @options;
         given($type) {
@@ -93,13 +130,14 @@ sub register {
     $app->helper( user_data => sub {
         my $c = shift;
         my $user_id = $c->session('user_id');
-        return unless $user_id;
+        my $user_type = $c->session('user_type'); 
+        return unless $user_id && $user_type;
 
         my $u_data;
-        if ($c->stash('um.user_data')) {
+        if ( $c->stash('um.user_data') ) {
             $u_data = $c->stash('um.user_data');
         } else {
-            $u_data = $self->storage->get($user_id);
+            $u_data = $c->um_storage($user_type)->get($user_id);
             delete $u_data->{password};
             $c->stash('um.user_data' => $u_data);
         }
@@ -112,36 +150,60 @@ sub register {
     # Guest routes
     my $r = $app->routes;
     
-    $r->get('/login') ->to( 'sessions#create_form', namespace  => $namespace )->name('auth_create_form');
-    $r->post('/login')->to( 'sessions#create',      namespace  => $namespace )->name('auth_create');
-    $r->any('/logout')->to( 'sessions#delete',      namespace  => $namespace )->name('auth_delete');
+    $r->get('/:user_type') ->to( 'sessions#create_form', namespace  => $namespace )->name('auth_create_form');
+    $r->post('/:user_type')->to( 'sessions#create',      namespace  => $namespace )->name('auth_create');
+    $r->any('/:user_type/logout')->to( 'sessions#delete',      namespace  => $namespace )->name('auth_delete');
 
-    $r->get('/registration') ->to( 'users#create_form', namespace => $namespace )->name('user_create_form');
-    $r->post('/registration')->to( 'users#create',      namespace => $namespace )->name('user_create');
+    $r->get('/:user_type/registration') ->to( 'users#create_form', namespace => $namespace )->name('user_create_form');
+    $r->post('/:user_type/registration/')->to( 'users#create',      namespace => $namespace )->name('user_create');
     
-    $r->get('/activate/:activation_code')->to( 'users#activate', namespace => $namespace )->name('user_create');
+    $r->get('/:user_type/activate/:activation_code')->to( 'users#activate', namespace => $namespace )->name('user_create');
     
     # Authenticated routes
-    my $auth_r = $r->bridge('/users/:user_id')->to(
+    my $auth_r = $r->bridge("/:user_type/users/:user_id")->to(
         controller => 'sessions', 
         action     => 'check',
-        namespace  => 'Mojolicious::Plugin::UserManager::Controller'
+        namespace  => $namespace
     );
-    
+        
     $auth_r->get('/edit')->to( 'users#update_form', namespace => $namespace )->name('user_update_form');
-    $auth_r->post('/')   ->to( 'users#update',      namespace => $namespace )->name('user_update');
+    $auth_r->post('/update')->to( 'users#update',      namespace => $namespace )->name('user_update');
+    
+    my @routes;
+    foreach my $user_type ( map { $_->{user_type} } @configs ) {
+        my $user_r = $r->bridge("/$user_type/users/:user_id")->to(
+            user_type  => $user_type,
+            controller => 'sessions', 
+            action     => 'check',
+            namespace  => $namespace
+        );
+        push @routes, $user_r;
+    }
     
     # Always return authenticated routes root from plugin 
-    return $auth_r;
+    return wantarray ? @routes : $routes[0];
 }
 
 ##################### Controller related methods ####################
 
 ########################### INTERNAL METHODS ##############################
 
+sub _get_config_by_type {
+    my ($self, $c, $user_type) = @_;
+    my $configs = $self->configs();
+    
+    $user_type ||= $c->stash('user_type');
+    
+    if ( keys %$configs == 1 ) {
+        return $configs->{'default'};
+    } else {
+        die "No config for user type [$user_type]\n" unless $configs->{$user_type};
+        return $configs->{$user_type};
+    }
+}
+
 sub _apply_conf_defaults {
-    my ( $self, $app ) = @_;
-    my $conf = $self->config();
+    my ( $self, $app, $conf ) = @_;
     
     $conf->{captcha}          //= 0;
     $conf->{layout}           //= 'user_manager';
@@ -150,13 +212,18 @@ sub _apply_conf_defaults {
     $conf->{password_crypter} //= sub { md5_hex( $_[0] ) };
     $conf->{fields}           //= [];
     $conf->{site_url}         //= 'http://localhost:3000/';
-    $conf->{home_url}         //= 'user_update_form',
+    $conf->{home_url}         //= 'user_update_form';
     
 
+    my $storage_dir = 'user_manager_' . $conf->{user_type};
+    unless ( -e $storage_dir ) {
+        make_path( $storage_dir ) or die "Cannot create storage dir [$storage_dir]";
+    }
+
     $conf->{storage} //= Hash::Storage->new(driver => [ 
-        'OneFile' => {
+        'Files' => {
             serializer => 'JSON',
-            file       => 'user_manager.json'    
+            dir        => $storage_dir    
         }]
     );
 
@@ -166,7 +233,7 @@ sub _apply_conf_defaults {
         $fields{ $f->{name} }++;
     }
 
-    $self->_merge_field_schema( {
+    $self->_merge_field_schema( $conf, {
         name  => 'email',
         label => 'Email',
         check => [ is_required(), 
@@ -174,14 +241,14 @@ sub _apply_conf_defaults {
         ]
     });
     
-    $self->_merge_field_schema( {
+    $self->_merge_field_schema( $conf, {
         name  => 'password',
         label => 'Password',
         type  => 'password',
         check => is_required
     });
     
-    $self->_merge_field_schema({
+    $self->_merge_field_schema( $conf, {
         name  => 'user_id',
         label => 'Login',
         check => [is_required, is_like(qr/^\w+$/)]
@@ -190,8 +257,7 @@ sub _apply_conf_defaults {
 }
 
 sub _merge_field_schema {
-    my ($self, $def_schema) = @_;
-    my $conf = $self->config();
+    my ($self, $conf, $def_schema) = @_;
     my ( $field_schema ) = grep { $def_schema->{name} eq $_->{name} } @{ $conf->{fields} };
 
     if ( $field_schema ) {
