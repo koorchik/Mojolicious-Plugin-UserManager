@@ -130,9 +130,13 @@ sub register {
     $app->helper( user_data => sub {
         my $c = shift;
         my $user_id = $c->session('user_id');
-        my $user_type = $c->session('user_type'); 
+        my $user_type = $c->session('user_type');
         return unless $user_id && $user_type;
 
+        if ( my $stash_user_type = $c->stash('user_type') ) {
+            return unless $stash_user_type eq $user_type;
+        }
+         
         my $u_data;
         if ( $c->stash('um.user_data') ) {
             $u_data = $c->stash('um.user_data');
@@ -160,11 +164,10 @@ sub register {
     $r->get('/:user_type/activate/:activation_code')->to( 'users#activate', namespace => $namespace )->name('user_create');
     
     # Authenticated routes
-    my $auth_r = $r->bridge("/:user_type/users/:user_id")->to(
-        controller => 'sessions', 
-        action     => 'check',
-        namespace  => $namespace
-    );
+    my $auth_r = $r->bridge("/:user_type/users/:user_id")->to( cb => sub {
+        my $c = shift;
+        return $self->_check_session($c);
+    });
         
     $auth_r->get('/edit')->to( 'users#update_form', namespace => $namespace )->name('user_update_form');
     $auth_r->post('/update')->to( 'users#update',      namespace => $namespace )->name('user_update');
@@ -172,11 +175,14 @@ sub register {
     my @routes;
     foreach my $user_type ( map { $_->{user_type} } @configs ) {
         my $user_r = $r->bridge("/$user_type/users/:user_id")->to(
-            user_type  => $user_type,
-            controller => 'sessions', 
-            action     => 'check',
-            namespace  => $namespace
-        );
+            user_type  => $user_type, 
+            cb => sub {
+                my $c = shift;
+                return $self->_check_session($c);
+                # TODO use Sessions Controller: 
+            }
+       );
+            
         push @routes, $user_r;
     }
     
@@ -187,6 +193,20 @@ sub register {
 ##################### Controller related methods ####################
 
 ########################### INTERNAL METHODS ##############################
+
+sub _check_session {
+    my ($self, $c) = @_;
+    $c->stash( 'user_id' => '' );
+    my $user_id = $c->session('user_id');
+    
+    if ( $user_id && $c->session('user_type') eq $c->stash('user_type') ) {
+        $c->stash( 'user_id' => $user_id );
+        return 1;
+    } else {
+        $c->redirect_to('auth_create_form');
+        return 0;
+    }
+}
 
 sub _get_config_by_type {
     my ($self, $c, $user_type) = @_;
