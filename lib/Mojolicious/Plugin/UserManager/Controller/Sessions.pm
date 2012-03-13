@@ -73,7 +73,7 @@ sub _check_user_password {
     my $config  = $self->um_config;
     my $storage = $self->um_storage;
 
-    my $user_data = $storage->get($user_id);
+    my $user_data = eval { $storage->get($user_id) };
 
     return 0 unless $user_data && exists $user_data->{password};
     return 1 if ( $config->{password_crypter}->($password) eq $user_data->{password} );
