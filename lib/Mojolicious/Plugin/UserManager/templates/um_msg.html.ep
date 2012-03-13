@@ -9,5 +9,5 @@
     }
 </style>
 
-<span class='red_msg'>  <%= flash 'error' %></span>
-<span class='green_msg'> <%= flash 'notice'%></span>
+<span class='red_msg'>  <%= flash 'um_error' %></span>
+<span class='green_msg'> <%= flash 'um_notice'%></span>

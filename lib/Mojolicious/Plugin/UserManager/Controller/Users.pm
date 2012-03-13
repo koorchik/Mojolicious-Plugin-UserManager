@@ -37,14 +37,14 @@ sub create {
 
         # Check captcha
         if ( $conf->{captcha} && !$self->recaptcha ) {
-            $self->flash( %$u_data, error => $self->stash('recaptcha_error') );
+            $self->flash( %$u_data, um_error => $self->stash('recaptcha_error') );
             $self->redirect_to('user_create_form');
             return;
         }
 
         # Check that user does not exists
         if ( $self->um_storage->get( $u_data->{user_id} ) ) {
-            $self->flash( %$u_data, error => 'Such user already exists' );
+            $self->flash( %$u_data, um_error => 'Such user already exists' );
             $self->redirect_to('user_create_form');
             return;
         }
@@ -55,7 +55,8 @@ sub create {
         # Send confirmation emails
         if ( $conf->{email_confirm} || $conf->{admin_confirm} ) {
             my $activation_code = md5_hex( time + rand(time) );
-            my $activation_url  = "$conf->{site_url}/activate/$activation_code";
+            my $user_type = $self->stash('user_type');
+            my $activation_url  = "$conf->{site_url}/$user_type/activate/$activation_code";
             $u_data->{_is_active}       = 0;
             $u_data->{_activation_code} = $activation_code;
 
@@ -71,7 +72,7 @@ sub create {
 
             # Send email to user
             if ( $conf->{email_confirm} && $u_data->{email} ) {
-                say "To activate [$u_data->{user_id}] go to $activation_url";
+                $self->app->log->debug( "To activate [$u_data->{user_id}] go to $activation_url" );
                 $self->mail(
                     to      => $u_data->{email},
                     subject => "User [ $u_data->{user_id} ] activation",
@@ -92,7 +93,7 @@ sub create {
         
 
         # Redirect to login form
-        $self->flash( notice => 'Registration completed' );
+        $self->flash( um_notice => 'Registration completed' );
         $self->redirect_to('auth_create_form');
     } else {
         my $errors_hash = $result->error;
@@ -100,7 +101,7 @@ sub create {
 
         my $label = $self->schema_for_field($field)->{label};
 
-        $self->flash( %$u_data, error => qq#$label: $errors_hash->{$field}# );
+        $self->flash( %$u_data, um_error => qq#$label: $errors_hash->{$field}# );
         $self->redirect_to('user_create_form');
     }
 }
@@ -109,8 +110,17 @@ sub update {
     my ($self) = @_;
     my $conf = $self->um_config;
 
-    my $result = $self->_validate_fields( [qw/password user_id/] );
+    my $result = $self->_validate_fields( [qw/password password2 user_id/] );
     my $u_data = $result->data;
+
+    # Check passwords
+    my $is_password_error;
+    if ( my $pass = $self->param('password') ) {
+        if ( $pass ne $self->param('password2') ) {
+            $self->flash( %$u_data, um_error => qq#Passwords do no coincide# );
+            return $self->redirect_to('user_update_form');    
+        }
+    }
 
     if ( $result->success ) {
 
@@ -125,12 +135,12 @@ sub update {
         # Save user
         $self->um_storage->set( $self->stash('user_id'), $u_data );
 
-        $self->flash( notice => 'Saved' );
+        $self->flash( um_notice => 'Saved' );
     } else {
         my $errors_hash = $result->error;
         my ($field)     = keys %$errors_hash;
         my $label       = $self->schema_for_field($field)->{label};
-        $self->flash( %$u_data, error => qq#$label: $errors_hash->{$field}# );
+        $self->flash( %$u_data, um_error => qq#$label: $errors_hash->{$field}# );
     }
     $self->redirect_to('user_update_form');
 }

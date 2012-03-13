@@ -31,7 +31,7 @@ sub create {
         # Check that user is activated
         my $u_data = $self->um_storage->get($user_id);
         unless ( $u_data->{_is_active} ) {
-            $self->flash( error => 'User is not active!' );
+            $self->flash( um_error => 'User is not active!' );
             $self->redirect_to('auth_create_form');
             return;
         }
@@ -42,7 +42,7 @@ sub create {
         $self->session( 'user_id' => $user_id, 'user_type' => $user_type );
         $self->redirect_to( $self->um_config->{home_url}, user_id => $user_id );
     } else {
-        $self->flash( error => 'Wrong user or password!' );
+        $self->flash( um_error => 'Wrong user or password!' );
         $self->redirect_to('auth_create_form');
     }
 }

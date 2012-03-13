@@ -17,7 +17,6 @@ use File::Basename qw/dirname/;
 use File::Spec::Functions qw/rel2abs catdir/;
 use File::Path qw/make_path/;
 
-use DDP;
 our $VERSION = '0.01';
 
 sub register {
@@ -154,12 +153,12 @@ sub register {
     # Guest routes
     my $r = $app->routes;
     
-    $r->get('/:user_type') ->to( 'sessions#create_form', namespace  => $namespace )->name('auth_create_form');
-    $r->post('/:user_type')->to( 'sessions#create',      namespace  => $namespace )->name('auth_create');
-    $r->any('/:user_type/logout')->to( 'sessions#delete',      namespace  => $namespace )->name('auth_delete');
+    $r->get('/:user_type') ->to( 'sessions#create_form',  namespace  => $namespace )->name('auth_create_form');
+    $r->post('/:user_type')->to( 'sessions#create',       namespace  => $namespace )->name('auth_create');
+    $r->any('/:user_type/logout')->to( 'sessions#delete', namespace  => $namespace )->name('auth_delete');
 
     $r->get('/:user_type/registration') ->to( 'users#create_form', namespace => $namespace )->name('user_create_form');
-    $r->post('/:user_type/registration/')->to( 'users#create',      namespace => $namespace )->name('user_create');
+    $r->post('/:user_type/registration/')->to( 'users#create',     namespace => $namespace )->name('user_create');
     
     $r->get('/:user_type/activate/:activation_code')->to( 'users#activate', namespace => $namespace )->name('user_create');
     
@@ -170,7 +169,7 @@ sub register {
     });
         
     $auth_r->get('/edit')->to( 'users#update_form', namespace => $namespace )->name('user_update_form');
-    $auth_r->post('/update')->to( 'users#update',      namespace => $namespace )->name('user_update');
+    $auth_r->post('/update')->to( 'users#update',   namespace => $namespace )->name('user_update');
     
     my @routes;
     foreach my $user_type ( map { $_->{user_type} } @configs ) {
@@ -261,12 +260,24 @@ sub _apply_conf_defaults {
         ]
     });
     
+     $self->_merge_field_schema( $conf, {
+        name  => 'password2',
+        label => 'Repeat Password',
+        type  => 'password',
+        check => sub {
+            my ($password2, $params) = @_;
+            return $password2 eq $params->{password} ? undef : 'Passwords do not coincide';
+        }
+    });
+    
     $self->_merge_field_schema( $conf, {
         name  => 'password',
         label => 'Password',
         type  => 'password',
         check => is_required
     });
+    
+   
     
     $self->_merge_field_schema( $conf, {
         name  => 'user_id',
