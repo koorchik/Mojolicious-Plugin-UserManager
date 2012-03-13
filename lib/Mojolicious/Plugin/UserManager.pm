@@ -234,17 +234,20 @@ sub _apply_conf_defaults {
     $conf->{home_url}         //= 'user_update_form';
     
 
-    my $storage_dir = 'user_manager_' . $conf->{user_type};
-    unless ( -e $storage_dir ) {
-        make_path( $storage_dir ) or die "Cannot create storage dir [$storage_dir]";
-    }
 
-    $conf->{storage} //= Hash::Storage->new(driver => [ 
-        'Files' => {
-            serializer => 'JSON',
-            dir        => $storage_dir    
-        }]
-    );
+    unless ( $conf->{storage} ) { 
+        my $storage_dir = 'user_manager_' . $conf->{user_type};
+        unless ( -e $storage_dir ) {
+            make_path( $storage_dir ) or die "Cannot create storage dir [$storage_dir]";
+        }
+    
+        $conf->{storage} //= Hash::Storage->new(driver => [ 
+            'Files' => {
+                serializer => 'JSON',
+                dir        => $storage_dir    
+            }]
+        );
+    }
 
     my %fields;
     foreach my $f ( @{ $conf->{fields} } ) {
