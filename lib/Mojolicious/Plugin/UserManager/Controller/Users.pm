@@ -32,12 +32,13 @@ sub create {
 
     my $result = $self->_validate_fields();
     my $u_data = $result->data;
+    delete $u_data->{password2};
 
     if ( $result->success ) {
 
         # Check captcha
         if ( $conf->{captcha} && !$self->recaptcha ) {
-            $self->flash( %$u_data, um_error => $self->stash('recaptcha_error') );
+            $self->flash( %$u_data, um_error => 'Wrong CAPTCHA code' );
             $self->redirect_to('user_create_form');
             return;
         }

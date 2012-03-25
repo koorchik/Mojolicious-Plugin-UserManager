@@ -116,12 +116,31 @@ sub register {
                 }
                 @options = ( \@completed_options );
             }
+            when ('checkbox') {
+            	@options = ( checked => 'checked' ) if $value; 
+            }
             default {
                 @options = (value => $value, @$tag_options );
             }
         } 
-                
-        my $tag_helper = ( $field_schema->{type} || 'text') . '_field';
+        
+        my $tag_helper;
+        given ($type) {
+        	when ('checkbox') {
+        		$tag_helper = 'check_box';
+        		unshift @options, 1;
+        	} 
+        	when ('select') {
+        		$tag_helper = 'select_field';
+        	}
+        	when ('password') {
+                $tag_helper = 'password_field';
+            }
+        	default {
+        	   $tag_helper = 'text_field';	
+        	}
+        }
+        
         return $c->$tag_helper( $name, @options );
     } );
 
@@ -153,9 +172,9 @@ sub register {
     # Guest routes
     my $r = $app->routes;
     
-    $r->get('/:user_type') ->to( 'sessions#create_form',  namespace  => $namespace )->name('auth_create_form');
-    $r->post('/:user_type')->to( 'sessions#create',       namespace  => $namespace )->name('auth_create');
-    $r->any('/:user_type/logout')->to( 'sessions#delete', namespace  => $namespace )->name('auth_delete');
+    $r->get('/:user_type') ->to( 'sessions#create_form',  namespace => $namespace )->name('auth_create_form');
+    $r->post('/:user_type')->to( 'sessions#create',       namespace => $namespace )->name('auth_create');
+    $r->any('/:user_type/logout')->to( 'sessions#delete', namespace => $namespace )->name('auth_delete');
 
     $r->get('/:user_type/registration') ->to( 'users#create_form', namespace => $namespace )->name('user_create_form');
     $r->post('/:user_type/registration/')->to( 'users#create',     namespace => $namespace )->name('user_create');

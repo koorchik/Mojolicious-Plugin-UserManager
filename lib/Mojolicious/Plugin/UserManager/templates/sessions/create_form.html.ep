@@ -1,6 +1,6 @@
 % title 'Login';
 
-<h1>Login Screen</h1>
+<h1>Login</h1>
 
 <%= form_for auth_create => (method => 'post') => begin %>
 
