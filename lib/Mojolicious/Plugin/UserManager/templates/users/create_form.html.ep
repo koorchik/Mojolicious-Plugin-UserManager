@@ -1,6 +1,7 @@
 % title 'Registration';
 
 <h1>Registration</h1>
+<br />
 
 <%= form_for user_create => (method => 'post') => begin %>
 
