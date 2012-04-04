@@ -7,6 +7,7 @@ use warnings;
 use Mojo::Base 'Mojolicious::Controller';
 use Validate::Tiny;
 use Digest::MD5 qw/md5_hex/;
+use Mojo::ByteStream qw/b/;
 
 sub create_form {
     my $self = shift;
@@ -32,9 +33,9 @@ sub create {
 
     my $result = $self->_validate_fields();
     my $u_data = $result->data;
-    delete $u_data->{password2};
 
     if ( $result->success ) {
+    	delete $u_data->{password2};
 
         # Check captcha
         if ( $conf->{captcha} && !$self->recaptcha ) {
@@ -51,38 +52,46 @@ sub create {
         }
 
         # Crypt password
-        $u_data->{password} = $conf->{password_crypter}->( $u_data->{password} );
+        my $plain_password = $u_data->{password};
+        $u_data->{password} = $conf->{password_crypter}->( $plain_password );
 
-        # Send confirmation emails
-        if ( $conf->{email_confirm} || $conf->{admin_confirm} ) {
-            my $activation_code = md5_hex( time + rand(time) );
+        # Send confirmation  email to admin
+        if ( $conf->{admin_confirm} ) {
+        	my $activation_code = md5_hex( time + rand(time) );
             my $user_type = $self->stash('user_type');
-            my $activation_url  = "$conf->{site_url}/$user_type/activate/$activation_code";
-            $u_data->{_is_active}       = 0;
-            $u_data->{_activation_code} = $activation_code;
-
-            # Send email to admin
-            if ( $conf->{admin_confirm} ) {
-                say "To activate [$u_data->{user_id}] go to $activation_url";
-                $self->mail(
-                    to      => $conf->{admin_confirm},
-                    subject => "User [ $u_data->{user_id} ] activation",
-                    data    => "To activate [$u_data->{user_id}] go to $activation_url",
-                );
-            }
-
-            # Send email to user
-            if ( $conf->{email_confirm} && $u_data->{email} ) {
-                $self->app->log->debug( "To activate [$u_data->{user_id}] go to $activation_url" );
-                $self->mail(
-                    to      => $u_data->{email},
-                    subject => "User [ $u_data->{user_id} ] activation",
-                    data    => "To activate [$u_data->{user_id}] go to $activation_url",
-                );
-            }
+            my $activation_url  = "$conf->{site_url}/$user_type/activation_by_admin/$activation_code";
+            $u_data->{_is_activated_by_admin}       = 0;
+            $u_data->{_activation_code_for_admin} = $activation_code;
+        	
+        	
+        	$self->app->log->debug( "To activate [$u_data->{user_id}] go to $activation_url" );
+            $self->mail(
+                to      => $conf->{admin_email},
+                subject => "User [ $u_data->{user_id} ] activation",
+                data    => "To activate [$u_data->{user_id}] go to $activation_url",
+            );
         } else {
-            $u_data->{_is_active} = 1;
+            $u_data->{_is_activated_by_admin} = 1;	
         }
+
+        # Send  confirmation  email to user
+        if ( $conf->{email_confirm} && $u_data->{email} ) {
+        	my $activation_code = md5_hex( time + rand(time) );
+            my $user_type = $self->stash('user_type');
+            my $activation_url  = "$conf->{site_url}/$user_type/activation_by_user/$activation_code";
+            $u_data->{_is_activated_by_user}       = 0;
+            $u_data->{_activation_code_for_user} = $activation_code;
+        
+            $self->app->log->debug( "To activate [$u_data->{user_id}] go to $activation_url" );
+            $self->mail(
+                to      => $u_data->{email},
+                subject => "User [ $u_data->{user_id} ] activation",
+                data    => "To activate [$u_data->{user_id}] go to $activation_url",
+            );
+        } else {
+        	$u_data->{_is_activated_by_user} = 1;
+        }
+
 
         # Save user
         $self->um_storage->set( $u_data->{user_id}, $u_data );
@@ -94,15 +103,14 @@ sub create {
         
 
         # Redirect to login form
-        $self->flash( um_notice => 'Registration completed' );
+        $self->flash( 
+            um_notice => 'Registration completed', 
+            user_id => $u_data->{user_id}, 
+            password => $plain_password 
+        );
         $self->redirect_to('auth_create_form');
     } else {
-        my $errors_hash = $result->error;
-        my ($field) = keys %$errors_hash;
-
-        my $label = $self->schema_for_field($field)->{label};
-
-        $self->flash( %$u_data, um_error => qq#$label: $errors_hash->{$field}# );
+        $self->flash( %$u_data, $self->_get_error_messages($result) );
         $self->redirect_to('user_create_form');
     }
 }
@@ -138,25 +146,106 @@ sub update {
 
         $self->flash( um_notice => 'Saved' );
     } else {
-        my $errors_hash = $result->error;
-        my ($field)     = keys %$errors_hash;
-        my $label       = $self->schema_for_field($field)->{label};
-        $self->flash( %$u_data, um_error => qq#$label: $errors_hash->{$field}# );
+        $self->flash( %$u_data, $self->_get_error_messages($result));
     }
     $self->redirect_to('user_update_form');
 }
 
-sub activate {
+sub activation_by_user {
     my ($self) = @_;
     my $act_code = $self->param('activation_code');
     return $self->render_text("Wrong activation code") unless $act_code =~ /^[0-9a-f]{32}$/i;
 
+    # TODO acvation link must contain user_id
     my $users = $self->um_storage->list();
-    my ($u_data) = grep { $_->{_activation_code} && $_->{_activation_code} eq $act_code } @$users;
+    my ($u_data) = grep { $_->{_activation_code_for_user} && $_->{_activation_code_for_user} eq $act_code } @$users;
 
     if ($u_data) {
-        $self->um_storage->set( $u_data->{user_id}, { _is_active => 1 } );
+        $self->um_storage->set( $u_data->{user_id}, { _is_activated_by_user => 1 } );
         $self->render_text("User [$u_data->{user_id}] activated");
+    } else {
+        $self->render_text("Wrong activation code");
+    }
+}
+
+sub activation_by_admin {
+    my ($self) = @_;
+    my $act_code = $self->param('activation_code');
+    return $self->render_text("Wrong activation code") unless $act_code =~ /^[0-9a-f]{32}$/i;
+    
+    # TODO acvation link must contain user_id
+    my $users = $self->um_storage->list();
+    my ($u_data) = grep { $_->{_activation_code_for_admin} && $_->{_activation_code_for_admin} eq $act_code } @$users;
+
+    if ($u_data) {
+        $self->um_storage->set( $u_data->{user_id}, { _is_activated_by_admin => 1 } );
+        $self->render_text("User [$u_data->{user_id}] activated");
+    } else {
+        $self->render_text("Wrong activation code");
+    }
+}
+
+sub remind_password_form {
+    my $self = shift;
+    my $user_id = $self->session('user_id');
+    
+    if ( $user_id && $self->session('user_type') eq $self->stash('user_type') ) {
+        $self->redirect_to( $self->um_config->{home_url}, user_id => $user_id );
+        return;
+    }
+    
+    $self->render( 'users/remind_password_form', layout => $self->um_config->{layout} );
+}
+
+
+sub remind_password {
+    my ($self) = @_;
+    my $user_id = $self->param('user_id');
+    my $u_data = eval{ $self->um_storage->get($user_id) };
+    
+    return $self->flash('um_error' => 'Wrong Login')->redirect_to('user_remind_password_form') unless ref $u_data;
+    
+    my $conf = $self->um_config;
+    my $autologin_code = md5_hex( time + rand(time) );
+    my $user_type = $self->stash('user_type');
+    my $autologin_url  = "$conf->{site_url}/$user_type/autologin/$autologin_code";
+    
+    $self->um_storage->set( $user_id, {_autologin_code => $autologin_code } );
+    
+    $self->app->log->debug( "To login [$u_data->{user_id}] account and change password go to $autologin_url" );
+    
+    $self->mail(
+        to      => $u_data->{email},
+        subject => "User [ $u_data->{user_id} ] password recovery",
+        data    => "To login [$u_data->{user_id}] account and change password go to $autologin_url",
+    );
+    
+    $self->flash('um_notice' => 'Check your E-mail')->redirect_to('auth_create_form');
+}
+
+sub autologin {
+    my ($self) = @_;
+    my $code = $self->param('autologin_code');
+    return $self->render_text("Wrong code") unless $code =~ /^[0-9a-f]{32}$/i;
+
+    # TODO autologin link must contain user_id
+    my $users = $self->um_storage->list();
+    my ($u_data) = grep { $_->{_autologin_code} && $_->{_autologin_code} eq $code } @$users;
+    
+    if ($u_data) {
+    	# TODO move this to Sessions controller
+	    unless ( $u_data->{_is_activated_by_user} && $u_data->{_is_activated_by_admin} ) {
+	        $self->flash( um_error => 'User is not active!' );
+	        $self->redirect_to('user_remind_password_form');
+	        return;
+	    }
+    	
+        $self->um_storage->set( $u_data->{user_id}, { _autologin_code => '' } );
+        
+        # TODO move session update to Sessions controller
+        $self->flash('um_notice' => 'Please, change your password');
+        $self->session( 'user_id' => $u_data->{user_id}, 'user_type' => $self->stash('user_type') );
+        $self->redirect_to('user_update_form', user_id => $u_data->{user_id});
     } else {
         $self->render_text("Wrong activation code");
     }
@@ -173,5 +262,16 @@ sub _validate_fields {
 
     return Validate::Tiny->new( \%input, { fields => \@fields, checks => \@checks } );
 }
+
+sub _get_error_messages {
+	my ($self, $result) = @_;
+	
+	my $errors_hash = $result->error;
+	
+    my %errors = map { ("um_error_${_}" => $errors_hash->{$_} ) } keys %$errors_hash;
+
+    return %errors;
+}
+
 
 1;

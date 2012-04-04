@@ -12,8 +12,14 @@
         % for my $field ( @{ all_fields_schema() } ) {
         	% unless ( $field->{skip_on_reg} ) { 
             	<tr>
-	                <td class='fieldname'><%= $field->{label} %></td>
-                	<td><%=  html_for_field($field->{name}) %></td>
+	                <td class='fieldname'><%== $field->{label} %></td>
+                	<td>
+                        <%=  html_for_field($field->{name}) %> 
+                        <br /> 
+                        <span style='color: red; font-size: 0.8em'>
+                            <%=  flash("um_error_$field->{name}") %>
+                        </span>
+                    </td>
             	</tr>
 			% }
         % }
@@ -29,7 +35,7 @@
         
         <tr>
             <td></td>
-            <td><a href='<%= url_for "auth_create_form" %>'> Back to Login </a></td>
+            <td style='font-size: 0.8em'><a href='<%= url_for "auth_create_form" %>'> Back to Login </a></td>
         </tr>
 
     </table>

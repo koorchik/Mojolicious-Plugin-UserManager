@@ -103,7 +103,8 @@ sub register {
         my @options;
         given($type) {
             when ('select') {
-                my $select_options = $tag_options->[0] || [];
+            	@options = @$tag_options; 
+                my $select_options = @options && ref $options[0] ? shift @options : [];
                 my @completed_options;
                 foreach my $opt ( @$select_options ) {
                     if ( ref($opt) eq 'ARRAY' && @$opt == 2 && $opt->[1] eq $value ) {
@@ -114,7 +115,7 @@ sub register {
                         push @completed_options, $opt;
                     }
                 }
-                @options = ( \@completed_options );
+                unshift @options, \@completed_options;
             }
             when ('checkbox') {
             	@options = ( checked => 'checked' ) if $value; 
@@ -140,6 +141,7 @@ sub register {
         	   $tag_helper = 'text_field';	
         	}
         }
+        
         
         return $c->$tag_helper( $name, @options );
     } );
@@ -179,7 +181,13 @@ sub register {
     $r->get('/:user_type/registration') ->to( 'users#create_form', namespace => $namespace )->name('user_create_form');
     $r->post('/:user_type/registration/')->to( 'users#create',     namespace => $namespace )->name('user_create');
     
-    $r->get('/:user_type/activate/:activation_code')->to( 'users#activate', namespace => $namespace )->name('user_create');
+    $r->get('/:user_type/remind_password') ->to( 'users#remind_password_form', namespace => $namespace )->name('user_remind_password_form');
+    $r->post('/:user_type/remind_password/')->to( 'users#remind_password',     namespace => $namespace )->name('user_remind_password');
+    $r->get('/:user_type/autologin/:autologin_code')->to( 'users#autologin', namespace => $namespace )->name('user_autologin'); 
+    
+    $r->get('/:user_type/activation_by_user/:activation_code')->to( 'users#activation_by_user', namespace => $namespace ); # TODO use names
+    $r->get('/:user_type/activation_by_admin/:activation_code')->to( 'users#activation_by_admin', namespace => $namespace ); # TODO use names
+    
     
     # Authenticated routes
     my $auth_r = $r->bridge("/:user_type/users/:user_id")->to( cb => sub {

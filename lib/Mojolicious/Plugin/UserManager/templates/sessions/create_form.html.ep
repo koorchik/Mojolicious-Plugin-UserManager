@@ -27,9 +27,12 @@
         </tr>
         <tr>
             <td></td>
-            <td><a href='<%= url_for "user_create_form" %>'>Registration</a></td>
+            <td style='font-size: 0.8em'>
+                <a href='<%= url_for "user_create_form" %>'>Registration</a> |
+                <a href='<%= url_for "user_remind_password_form" %>'>Remind password</a>
+            </td>
         </tr>
-
+        
     </table>
 
 </div>

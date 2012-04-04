@@ -6,12 +6,18 @@
 
 <div class='fieldset' style='width: 400px'>
     <table class='form'>
-        <% for my $field ( @{ all_fields_schema() } ) { %>
+        % for my $field ( @{ all_fields_schema() } ) {
             <tr>
-                <td class='fieldname'><%= $field->{label} %></td>
-                <td><%=  html_for_field($field->{name}) %></td>
+                <td class='fieldname'><%== $field->{label} %></td>
+                <td>
+                    <%=  html_for_field($field->{name}) %> 
+                    <br /> 
+                    <span style='color: red; font-size: 0.8em'>
+                        <%=  flash("um_error_$field->{name}") %>
+                    </span>
+                </td>
             </tr>
-        <% } %>
+        % }
         
         <tr>
             <td></td>
