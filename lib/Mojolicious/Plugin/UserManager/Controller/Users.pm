@@ -254,7 +254,7 @@ sub autologin {
         $self->session( 'user_id' => $u_data->{user_id}, 'user_type' => $self->stash('user_type') );
         $self->redirect_to('user_update_form', user_id => $u_data->{user_id});
     } else {
-        $self->render_text("Wrong activation code");
+        $self->render_text("Wrong password recovery code");
     }
 }
 
