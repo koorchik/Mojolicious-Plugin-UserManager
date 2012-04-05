@@ -93,7 +93,7 @@ sub register {
         
         
         my $name  = $field_schema->{name};
-        my $value = $c->flash($name) // ${ $c->user_data() || {} }{$name} // '';
+        my $value = $c->flash($name) // ${ $c->user_data() || {} }{$name} // $field_schema->{default} // '';
 
         my $type  = $field_schema->{type} || 'text';
         my $tag_options = $field_schema->{tag_options};
@@ -137,6 +137,12 @@ sub register {
         	when ('password') {
                 $tag_helper = 'password_field';
             }
+            when ('hidden') {
+                $tag_helper = 'hidden_field';
+            }
+            when ('tag') {
+                $tag_helper = 't';
+            }
         	default {
         	   $tag_helper = 'text_field';	
         	}
@@ -170,27 +176,30 @@ sub register {
     } );
     
     my $namespace = 'Mojolicious::Plugin::UserManager::Controller';
+
+    my $re_str = join('|',  map { quotemeta($_->{user_type}) } @configs);
+    my @restrict = ( user_type => qr/$re_str/ );
     
     # Guest routes
     my $r = $app->routes;
     
-    $r->get('/:user_type') ->to( 'sessions#create_form',  namespace => $namespace )->name('auth_create_form');
-    $r->post('/:user_type')->to( 'sessions#create',       namespace => $namespace )->name('auth_create');
-    $r->any('/:user_type/logout')->to( 'sessions#delete', namespace => $namespace )->name('auth_delete');
+    $r->get('/:user_type', \@restrict ) ->to( 'sessions#create_form',  namespace => $namespace )->name('auth_create_form');
+    $r->post('/:user_type', \@restrict )->to( 'sessions#create',       namespace => $namespace )->name('auth_create');
+    $r->any('/:user_type/logout', \@restrict )->to( 'sessions#delete', namespace => $namespace )->name('auth_delete');
 
-    $r->get('/:user_type/registration') ->to( 'users#create_form', namespace => $namespace )->name('user_create_form');
-    $r->post('/:user_type/registration/')->to( 'users#create',     namespace => $namespace )->name('user_create');
+    $r->get('/:user_type/registration', \@restrict ) ->to( 'users#create_form', namespace => $namespace )->name('user_create_form');
+    $r->post('/:user_type/registration/', \@restrict )->to( 'users#create',     namespace => $namespace )->name('user_create');
     
-    $r->get('/:user_type/remind_password') ->to( 'users#remind_password_form', namespace => $namespace )->name('user_remind_password_form');
-    $r->post('/:user_type/remind_password/')->to( 'users#remind_password',     namespace => $namespace )->name('user_remind_password');
-    $r->get('/:user_type/autologin/:autologin_code')->to( 'users#autologin', namespace => $namespace )->name('user_autologin'); 
+    $r->get('/:user_type/remind_password', \@restrict ) ->to( 'users#remind_password_form', namespace => $namespace )->name('user_remind_password_form');
+    $r->post('/:user_type/remind_password/', \@restrict )->to( 'users#remind_password',     namespace => $namespace )->name('user_remind_password');
+    $r->get('/:user_type/autologin/:autologin_code', \@restrict )->to( 'users#autologin', namespace => $namespace )->name('user_autologin'); 
     
-    $r->get('/:user_type/activation_by_user/:activation_code')->to( 'users#activation_by_user', namespace => $namespace ); # TODO use names
-    $r->get('/:user_type/activation_by_admin/:activation_code')->to( 'users#activation_by_admin', namespace => $namespace ); # TODO use names
+    $r->get('/:user_type/activation_by_user/:activation_code', \@restrict )->to( 'users#activation_by_user', namespace => $namespace ); # TODO use names
+    $r->get('/:user_type/activation_by_admin/:activation_code', \@restrict )->to( 'users#activation_by_admin', namespace => $namespace ); # TODO use names
     
     
     # Authenticated routes
-    my $auth_r = $r->bridge("/:user_type/users/:user_id")->to( cb => sub {
+    my $auth_r = $r->bridge("/:user_type/users/(.user_id)")->to( cb => sub {
         my $c = shift;
         return $self->_check_session($c);
     });
@@ -200,7 +209,7 @@ sub register {
     
     my @routes;
     foreach my $user_type ( map { $_->{user_type} } @configs ) {
-        my $user_r = $r->bridge("/$user_type/users/:user_id")->to(
+        my $user_r = $r->bridge("/$user_type/users/(.user_id)")->to(
             user_type  => $user_type, 
             cb => sub {
                 my $c = shift;
@@ -312,7 +321,7 @@ sub _apply_conf_defaults {
     $self->_merge_field_schema( $conf, {
         name  => 'user_id',
         label => 'Login',
-        check => [is_required, is_like(qr/^\w+$/)]
+        check => [is_required, is_like(qr/^[a-zA-Z0-9][a-zA-Z0-9_\@\-.]*[a-zA-Z0-9]$/)]
     });
     
 }

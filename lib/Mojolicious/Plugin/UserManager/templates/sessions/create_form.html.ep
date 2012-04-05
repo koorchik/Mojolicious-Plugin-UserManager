@@ -9,13 +9,15 @@
 <div class='fieldset' style='width: 400px'>
     <table class='form'>
         <tr>
-            <td class='fieldname'><%= schema_for_field('user_id')->{label} %></td>
+            <!-- <td class='fieldname'><%= schema_for_field('user_id')->{label} %></td>  //TODO use this -->
+            <td class='fieldname'>Login</td>
 
             <td><input type='text' name='user_id' value="<%= flash 'user_id' %>" /></td>
         </tr>
 
         <tr>
-            <td class='fieldname'><%= schema_for_field('password')->{label} %> </td>
+            <!-- <td class='fieldname'><%= schema_for_field('password')->{label} %></td>  //TODO use this -->
+            <td class='fieldname'>Password</td>
 
             <td><input type='password' name='password' value="<%= flash 'password' %>" /></td>
         </tr>

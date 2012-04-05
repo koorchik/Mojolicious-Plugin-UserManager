@@ -37,6 +37,13 @@ sub create {
     if ( $result->success ) {
     	delete $u_data->{password2};
 
+        # Apply defaults for "skip_on_reg" fields
+        foreach my $field ( @{ $self->um_config->{fields} } ) {
+        	next unless $field->{skip_on_reg};
+        	next unless exists $field->{default};
+        	$u_data->{ $field->{name} } = $field->{default} if length( $u_data->{ $field->{name} } ) == 0;
+        }
+
         # Check captcha
         if ( $conf->{captcha} && !$self->recaptcha ) {
             $self->flash( %$u_data, um_error => 'Wrong CAPTCHA code' );
