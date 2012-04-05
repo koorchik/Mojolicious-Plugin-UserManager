@@ -35,8 +35,6 @@ sub create {
     my $u_data = $result->data;
 
     if ( $result->success ) {
-    	delete $u_data->{password2};
-
         # Apply defaults for "skip_on_reg" fields
         foreach my $field ( @{ $self->um_config->{fields} } ) {
         	next unless $field->{skip_on_reg};
@@ -57,6 +55,8 @@ sub create {
             $self->redirect_to('user_create_form');
             return;
         }
+
+        delete $u_data->{password2};
 
         # Crypt password
         my $plain_password = $u_data->{password};
