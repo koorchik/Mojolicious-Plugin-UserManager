@@ -169,7 +169,8 @@ sub activation_by_user {
 
     if ($u_data) {
         $self->um_storage->set( $u_data->{user_id}, { _is_activated_by_user => 1 } );
-        $self->render_text("User [$u_data->{user_id}] activated");
+        $self->flash( um_notice => "User [$u_data->{user_id}] activated", user_id => $u_data->{user_id} );
+        $self->redirect_to('auth_create_form');
     } else {
         $self->render_text("Wrong activation code");
     }
@@ -186,7 +187,8 @@ sub activation_by_admin {
 
     if ($u_data) {
         $self->um_storage->set( $u_data->{user_id}, { _is_activated_by_admin => 1 } );
-        $self->render_text("User [$u_data->{user_id}] activated");
+        $self->flash( um_notice => "User [$u_data->{user_id}] activated", user_id => $u_data->{user_id} );
+        $self->redirect_to('auth_create_form');
     } else {
         $self->render_text("Wrong activation code");
     }
@@ -238,7 +240,7 @@ sub autologin {
     # TODO autologin link must contain user_id
     my $users = $self->um_storage->list();
     my ($u_data) = grep { $_->{_autologin_code} && $_->{_autologin_code} eq $code } @$users;
-    
+
     if ($u_data) {
     	# TODO move this to Sessions controller
 	    unless ( $u_data->{_is_activated_by_user} && $u_data->{_is_activated_by_admin} ) {

@@ -30,8 +30,15 @@ sub create {
 
         # Check that user is activated
         my $u_data = $self->um_storage->get($user_id);
-        unless ( $u_data->{_is_activated_by_user} && $u_data->{_is_activated_by_admin} ) {
+        unless ( $u_data->{_is_activated_by_user} ) {
             $self->flash( um_error => 'User is not active!' );
+            $self->redirect_to('auth_create_form');
+            return;
+        }
+
+        # Check that user is activated by admin
+        unless ( $u_data->{_is_activated_by_admin} ) {
+            $self->flash( um_error => 'User must be activated by administrator!' );
             $self->redirect_to('auth_create_form');
             return;
         }
