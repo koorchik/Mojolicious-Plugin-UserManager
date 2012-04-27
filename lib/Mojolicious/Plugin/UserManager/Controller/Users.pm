@@ -152,6 +152,7 @@ sub update {
         $self->um_storage->set( $self->stash('user_id'), $u_data );
 
         $self->flash( um_notice => 'Saved' );
+        return $self->redirect_to( $self->um_config->{home_url} );
     } else {
         $self->flash( %$u_data, $self->_get_error_messages($result));
     }
