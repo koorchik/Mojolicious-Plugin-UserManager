@@ -6,7 +6,7 @@
 
 <%= include 'um_msg' %>
 
-<div class='fieldset' style='width: 400px'>
+<div class='fieldset' style='width: 600px'>
     <table class='form'>
         <tr>
             <!-- <td class='fieldname'><%= schema_for_field('user_id')->{label} %></td>  //TODO use this -->

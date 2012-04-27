@@ -111,7 +111,7 @@ sub create {
 
         # Redirect to login form
         $self->flash( 
-            um_notice => 'Registration completed', 
+            um_notice => 'Registration completed - Check Email For Confirmation', 
             user_id => $u_data->{user_id}, 
             password => $plain_password 
         );

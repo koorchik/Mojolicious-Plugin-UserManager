@@ -7,7 +7,7 @@
 
 <%= include 'um_msg' %>
 
-<div class='fieldset' style='width: 400px'>
+<div class='fieldset' style='width: 600px'>
     <table class='form'>
         % for my $field ( @{ all_fields_schema() } ) {
         	% unless ( $field->{skip_on_reg} ) { 
