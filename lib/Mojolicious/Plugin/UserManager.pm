@@ -287,7 +287,7 @@ sub _apply_conf_defaults {
 
     my %fields;
     foreach my $f ( @{ $conf->{fields} } ) {
-        croak "Field [$_->{name}] duplication" if $fields{ $f->{name} };
+        croak "Field [$_->{name}] duplication\n" if $fields{ $f->{name} };
         $fields{ $f->{name} }++;
     }
 

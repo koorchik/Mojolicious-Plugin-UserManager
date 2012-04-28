@@ -8,7 +8,7 @@
     <table class='form'>
         % for my $field ( @{ all_fields_schema() } ) {
             <tr>
-                <td class='fieldname'><%== $field->{label} %></td>
+                <td class='fieldname' title='<%= $field->{hint} %>' ><%== $field->{label} %></td>
                 <td>
                     <%=  html_for_field($field->{name}) %> 
                     <br /> 
