@@ -1,5 +1,5 @@
 =head1 NAME
-
+  
 Mojolicious::Plugin::UserManager - User Manager for Mojolicious applications 
 
 PLUGIN IS IN A DEVELOPMENT STAGE. DO NOT USE IT YET.
