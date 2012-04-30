@@ -126,7 +126,7 @@ sub update {
     my ($self) = @_;
     my $conf = $self->um_config;
 
-    my $result = $self->_validate_fields( [qw/password password2 user_id/] );
+    my $result = $self->_validate_fields( [qw/password password2 user_id email/] );
     my $u_data = $result->data;
 
     # Check passwords
@@ -139,7 +139,6 @@ sub update {
     }
 
     if ( $result->success ) {
-
         # Crypt password
         my $new_pass = $self->param('password');
         if ($new_pass) {
@@ -150,13 +149,11 @@ sub update {
 
         # Save user
         $self->um_storage->set( $self->stash('user_id'), $u_data );
-
-        $self->flash( um_notice => 'Saved' );
-        return $self->redirect_to( $self->um_config->{home_url} );
+        $self->flash( um_notice => 'Saved' )->redirect_to( $self->um_config->{home_url} );
     } else {
-        $self->flash( %$u_data, $self->_get_error_messages($result));
+        $self->flash( %$u_data, $self->_get_error_messages($result))->redirect_to('user_update_form');
     }
-    $self->redirect_to('user_update_form');
+    
 }
 
 sub activation_by_user {
@@ -277,7 +274,6 @@ sub _get_error_messages {
 	my ($self, $result) = @_;
 	
 	my $errors_hash = $result->error;
-	
     my %errors = map { ("um_error_${_}" => $errors_hash->{$_} ) } keys %$errors_hash;
 
     return %errors;
