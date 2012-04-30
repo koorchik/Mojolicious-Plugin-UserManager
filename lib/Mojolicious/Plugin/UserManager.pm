@@ -288,7 +288,7 @@ sub _apply_conf_defaults {
     my %fields;
     foreach my $f ( @{ $conf->{fields} } ) {
         croak "UM field [$f->{name}] exists twice\n" if $fields{ $f->{name} };
-        $fields{ $f->{name} }++;
+        $fields{ $f->{name} }++ if $f->{type} && $f->{type} ne 'tag';
     }
 
     $self->_merge_field_schema( $conf, {
