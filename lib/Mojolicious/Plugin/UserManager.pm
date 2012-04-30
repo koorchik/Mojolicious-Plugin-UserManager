@@ -268,8 +268,10 @@ sub _apply_conf_defaults {
     $conf->{fields}           //= [];
     $conf->{site_url}         //= 'http://localhost:3000/';
     $conf->{home_url}         //= 'user_update_form';
-    
-
+    $conf->{login_labels}{title}    //= '<h1>Login</h1>';
+    $conf->{login_labels}{user_id}  //= 'Login';
+    $conf->{login_labels}{password} //= 'Password';
+    $conf->{login_labels}{submit}   //= 'Login';
 
     unless ( $conf->{storage} ) { 
         my $storage_dir = 'user_manager_' . $conf->{user_type};

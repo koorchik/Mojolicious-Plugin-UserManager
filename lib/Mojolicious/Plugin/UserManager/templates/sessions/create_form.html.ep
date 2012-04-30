@@ -1,6 +1,6 @@
 % title 'Login';
 
-<h1>Login</h1> <br />
+<%== um_config->{login_labels}->{title} %> <br />
 
 <%= form_for auth_create => (method => 'post') => begin %>
 
@@ -10,21 +10,21 @@
     <table class='form'>
         <tr>
             <!-- <td class='fieldname'><%= schema_for_field('user_id')->{label} %></td>  //TODO use this -->
-            <td class='fieldname'>Login</td>
+            <td class='fieldname'><%== um_config->{login_labels}->{user_id} %></td>
 
             <td><input type='text' name='user_id' value="<%= flash 'user_id' %>" /></td>
         </tr>
 
         <tr>
             <!-- <td class='fieldname'><%= schema_for_field('password')->{label} %></td>  //TODO use this -->
-            <td class='fieldname'>Password</td>
+            <td class='fieldname'><%== um_config->{login_labels}->{password} %></td>
 
             <td><input type='password' name='password' value="<%= flash 'password' %>" /></td>
         </tr>
 
         <tr>
             <td></td>
-            <td style='padding-top: 7px;'><input type='submit' value='Login' /></td>
+            <td style='padding-top: 7px;'><button type='submit' ><%== um_config->{login_labels}->{submit} %></button></td>
 
         </tr>
         <tr>
