@@ -46,6 +46,7 @@ sub create {
         my $user_type = $self->stash('user_type');
         die "Cannot work without user_type" unless $user_type;
         
+        $self->_update_expires();
         $self->session( 'user_id' => $user_id, 'user_type' => $user_type );
         $self->redirect_to( $self->um_config->{home_url}, user_id => $user_id );
     } else {
@@ -59,18 +60,12 @@ sub delete {
     $self->session( user_id => '' )->redirect_to('auth_create_form');
 }
 
-sub check {
-    my ($self) = @_;
-    $self->stash( 'user_id' => '' );
-    my $user_id   = $self->session('user_id');
 
-    if ( $user_id && $self->session('user_type') eq $self->stash('user_type') ) {
-        $self->stash( 'user_id' => $user_id );
-        return 1;
-    } else {
-        $self->redirect_to('auth_create_form');
-        return 0;
-    }
+sub _update_expires {
+    # TODO remove dupication with UserManager::_session_update_expires
+    my $self = shift;
+    return unless $self->um_config->{session_expiration};
+    $self->session( 'lifetime' => ( time + $self->um_config->{session_expiration} ) );
 }
 
 sub _check_user_password {

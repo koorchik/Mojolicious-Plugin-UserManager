@@ -234,13 +234,29 @@ sub _check_session {
     $c->stash( 'user_id' => '' );
     my $user_id = $c->session('user_id');
     
-    if ( $user_id && $c->session('user_type') eq $c->stash('user_type') ) {
+    if ( $user_id && $c->session('user_type') eq $c->stash('user_type') && !$self->_session_is_expired($c) ) {
+        $self->_session_update_expires($c);
         $c->stash( 'user_id' => $user_id );
         return 1;
     } else {
-        $c->redirect_to('auth_create_form');
+        $c->session( user_id => '' )->redirect_to('auth_create_form');
         return 0;
     }
+}
+
+sub _session_is_expired {
+    my ($self, $c) = @_;
+    return 1 unless $c->um_config->{session_expiration};
+
+    return 0 if ( ( $c->session('lifetime') || 0 )  > time );
+    return 1;
+}
+
+sub _session_update_expires {
+    my ($self, $c) = @_;
+    
+    return unless $c->um_config->{session_expiration};
+    $c->session( 'lifetime' => time + $c->um_config->{session_expiration} );
 }
 
 sub _get_config_by_type {
