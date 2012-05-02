@@ -27,5 +27,7 @@
         
     </table>
 
+    <p>(hover over input fields to learn more information.)</p>
+
 </div>
 <% end %>

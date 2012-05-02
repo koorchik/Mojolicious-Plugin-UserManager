@@ -25,7 +25,7 @@
         % }
         
         <tr>
-            <td colspan="2"><%= recaptcha_html() if $captcha %></td>
+            <td colspan="2"><%= recaptcha_html() if $captcha %> <br /> <span style="font-size:x-small"> These recaptcha puzzles are often too difficult, but required to avoid spammers.<br />Just click the reload button (top in the column) for an easier one...a few times if need be.</span> </td>
         </tr>
         
         <tr>
@@ -40,5 +40,6 @@
 
     </table>
 
+    <p>(hover over input fields to learn more information.)</p>
 </div>
 <% end %>
