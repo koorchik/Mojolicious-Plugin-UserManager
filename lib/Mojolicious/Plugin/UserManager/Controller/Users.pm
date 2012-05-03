@@ -71,7 +71,7 @@ sub create {
             $u_data->{_activation_code_for_admin} = $activation_code;
         	
         	
-        	$self->app->log->debug( "To activate [$u_data->{user_id}] go to $activation_url" );
+        	$self->app->log->info( "Sending registration email for [$u_data->{user_id}] to amin. Activation link [$activation_url]" );
             $self->mail(
                 to      => $conf->{admin_email},
                 subject => "User [ $u_data->{user_id} ] activation",
@@ -89,7 +89,7 @@ sub create {
             $u_data->{_is_activated_by_user}       = 0;
             $u_data->{_activation_code_for_user} = $activation_code;
         
-            $self->app->log->debug( "To activate [$u_data->{user_id}] go to $activation_url" );
+            $self->app->log->info( "Sending registration email for [$u_data->{user_id}] to [$u_data->{email}]. Activation link [$activation_url]" );
             $self->mail(
                 to      => $u_data->{email},
                 subject => "User [ $u_data->{user_id} ] activation",
@@ -221,6 +221,7 @@ sub remind_password {
     
     $self->app->log->debug( "To login [$u_data->{user_id}] account and change password go to $autologin_url" );
     
+    $self->app->log->info( "Sending password recovery email for [$u_data->{user_id}] to [$u_data->{email}]. Recovery link [$autologin_url]" );
     $self->mail(
         to      => $u_data->{email},
         subject => "User [ $u_data->{user_id} ] password recovery",

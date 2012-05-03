@@ -157,6 +157,7 @@ sub register {
         my $c = shift;
         my $user_id = $c->session('user_id');
         my $user_type = $c->session('user_type');
+
         return unless $user_id && $user_type;
 
         if ( my $stash_user_type = $c->stash('user_type') ) {
@@ -209,7 +210,7 @@ sub register {
     
     my @routes;
     foreach my $user_type ( map { $_->{user_type} } @configs ) {
-        my $user_r = $r->bridge("/$user_type/users/(.user_id)")->to(
+        my $user_r = $r->bridge("/$user_type/users/#user_id")->to(
             user_type  => $user_type, 
             cb => sub {
                 my $c = shift;
@@ -339,7 +340,7 @@ sub _apply_conf_defaults {
     $self->_merge_field_schema( $conf, {
         name  => 'user_id',
         label => 'Login',
-        check => [is_required, is_like(qr/^[a-zA-Z0-9][a-zA-Z0-9_\@\-.]*[a-zA-Z0-9]$/)]
+        check => [is_required, is_like(qr/^[a-zA-Z0-9][a-zA-Z0-9_\@\-.+]*[a-zA-Z0-9]$/)]
     });
     
 }
