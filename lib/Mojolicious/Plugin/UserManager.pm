@@ -200,7 +200,7 @@ sub register {
     
     
     # Authenticated routes
-    my $auth_r = $r->bridge("/:user_type/users/(.user_id)")->to( cb => sub {
+    my $auth_r = $r->bridge("/:user_type/users/#user_id")->to( cb => sub {
         my $c = shift;
         return $self->_check_session($c);
     });
