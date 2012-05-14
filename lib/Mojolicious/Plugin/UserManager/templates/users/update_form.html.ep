@@ -1,4 +1,6 @@
-% title 'Settings';
+% title um_config->{profile_labels}->{page_title};
+
+<%== um_config->{profile_labels}->{title} %> <br />
 
 <%= form_for user_update => {user_id => $user_id} => (method => 'post') => begin %>
 
@@ -8,6 +10,7 @@
     <table class='form'>
         % for my $field ( @{ all_fields_schema() } ) {
         % next if $field->{name} ~~ ['user_id', 'email'];
+        % next if $field->{type} eq 'hidden';
             <tr>
                 <td class='fieldname' title='<%= $field->{hint} %>' ><%== $field->{label} %></td>
                 <td>

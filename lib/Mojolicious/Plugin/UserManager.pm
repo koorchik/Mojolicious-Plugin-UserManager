@@ -93,8 +93,13 @@ sub register {
         
         
         my $name  = $field_schema->{name};
-        my $value = $c->flash($name) // ${ $c->user_data() || {} }{$name} // $field_schema->{default} // '';
-
+        my $value = 
+            $c->flash($name) 
+            // ${ $c->user_data() || {} }{$name}
+            // ( $field_schema->{allow_pass_default} ? $c->param($name) : undef ) 
+            // $field_schema->{default} 
+            // '';
+            
         my $type  = $field_schema->{type} || 'text';
         my $tag_options = $field_schema->{tag_options};
         $tag_options = $tag_options->($c) if ref($tag_options) eq 'CODE';
@@ -124,7 +129,7 @@ sub register {
                 @options = (value => $value, @$tag_options );
             }
         } 
-        
+
         my $tag_helper;
         given ($type) {
         	when ('checkbox') {
@@ -285,10 +290,17 @@ sub _apply_conf_defaults {
     $conf->{fields}           //= [];
     $conf->{site_url}         //= 'http://localhost:3000/';
     $conf->{home_url}         //= 'user_update_form';
+    
     $conf->{login_labels}{title}    //= '<h1>Login</h1>';
     $conf->{login_labels}{user_id}  //= 'Login';
     $conf->{login_labels}{password} //= 'Password';
     $conf->{login_labels}{submit}   //= 'Login';
+    
+    $conf->{registration_labels}{title} //= '<h1>Registration</h1>';
+    
+    $conf->{profile_labels}{title} //= '<h1>Settings</h1>';
+    
+    $conf->{password_reminder_labels}{title} //= '<h1>Remind Password</h1>';
 
     unless ( $conf->{storage} ) { 
         my $storage_dir = 'user_manager_' . $conf->{user_type};
@@ -305,10 +317,25 @@ sub _apply_conf_defaults {
     }
 
     my %fields;
+    my @hidden_fields;
     foreach my $f ( @{ $conf->{fields} } ) {
         croak "UM field [$f->{name}] exists twice\n" if $fields{ $f->{name} };
         $fields{ $f->{name} }++ if $f->{type} && $f->{type} ne 'tag';
+        
+        $f->{type} ||= 'text';
+        
+        if ( $f->{allow_pass_default} && $f->{skip_on_reg} ) {
+            my $hidden = {
+                'type'               => 'hidden',
+                'allow_pass_default' => 1, 
+                'default'            => $f->{'default'},
+                'name'               => $f->{name},
+            };
+            push @hidden_fields, $hidden; 
+        }
     }
+    
+    unshift @{ $conf->{fields} }, @hidden_fields; # TODO avoid name conflicts at all 
 
     $self->_merge_field_schema( $conf, {
         name  => 'email',

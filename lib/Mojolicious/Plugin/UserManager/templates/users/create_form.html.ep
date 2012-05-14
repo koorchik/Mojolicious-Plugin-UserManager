@@ -1,6 +1,7 @@
 % title 'Registration';
 
-<h1>Registration</h1>
+<%== um_config->{registration_labels}->{title} %> <br />
+
 <br />
 
 <%= form_for user_create => (method => 'post') => begin %>
@@ -10,7 +11,8 @@
 <div class='fieldset' style='width: 600px'>
     <table class='form'>
         % for my $field ( @{ all_fields_schema() } ) {
-        	% unless ( $field->{skip_on_reg} ) { 
+        	% unless ( $field->{skip_on_reg} ) {
+                % next if $field->{type} eq 'hidden';  
             	<tr>
 	                <td class='fieldname' title='<%= $field->{hint} %>' ><%== $field->{label} %></td>
                 	<td>
@@ -42,4 +44,11 @@
 
     <p>(hover over input fields to learn more information.)</p>
 </div>
+
+
+% for my $field ( grep { $_->{type} eq 'hidden' && !$_->{skip_on_reg} }  @{ all_fields_schema() } ) {
+    <%=  html_for_field($field->{name}) %> 
+    <%=  flash("um_error_$field->{name}") %>
+% }
+
 <% end %>
