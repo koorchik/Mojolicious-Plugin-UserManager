@@ -242,13 +242,13 @@ sub autologin {
 
     if ($u_data) {
     	# TODO move this to Sessions controller
-	    unless ( $u_data->{_is_activated_by_user} && $u_data->{_is_activated_by_admin} ) {
+	    unless ( $u_data->{_is_activated_by_admin} ) {
 	        $self->flash( um_error => 'User is not active!' );
 	        $self->redirect_to('user_remind_password_form');
 	        return;
 	    }
     	
-        $self->um_storage->set( $u_data->{user_id}, { _autologin_code => '' } );
+        $self->um_storage->set( $u_data->{user_id}, { _autologin_code => '', _is_activated_by_user => 1 } );
         
         # TODO move session update to Sessions controller
         $self->flash('um_notice' => 'Please, change your password');
