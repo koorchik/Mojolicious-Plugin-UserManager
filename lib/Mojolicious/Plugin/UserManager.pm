@@ -125,6 +125,9 @@ sub register {
             when ('checkbox') {
             	@options = ( checked => 'checked' ) if $value; 
             }
+            when ('hidden') {
+                @options = ( $value ) if $value; 
+            }
             default {
                 @options = (value => $value, @$tag_options );
             }
@@ -152,7 +155,6 @@ sub register {
         	   $tag_helper = 'text_field';	
         	}
         }
-        
         
         return $c->$tag_helper( $name, @options );
     } );
