@@ -47,7 +47,7 @@
 
 
 % for my $field ( grep { $_->{type} eq 'hidden' && !$_->{skip_on_reg} }  @{ all_fields_schema() } ) {
-    <%=  html_for_field($field->{name}) %> 
+    <%=  html_for_field($field) %> 
     <%=  flash("um_error_$field->{name}") %>
 % }
 

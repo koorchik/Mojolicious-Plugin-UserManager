@@ -89,7 +89,12 @@ sub register {
         my ($c, $field_name) = @_;
         my $conf = $c->um_config;
         
-        my ($field_schema) = grep {$_->{name} eq $field_name} @{$conf->{fields}};
+        my $field_schema;
+        if (ref $field_name) {
+            $field_schema = $field_name; 
+        } else {
+            ($field_schema) = grep {$_->{name} eq $field_name} @{$conf->{fields}};            
+        }
         
         
         my $name  = $field_schema->{name};
@@ -337,7 +342,7 @@ sub _apply_conf_defaults {
         }
     }
     
-    unshift @{ $conf->{fields} }, @hidden_fields; # TODO avoid name conflicts at all 
+    push @{ $conf->{fields} }, @hidden_fields; # TODO avoid name conflicts at all 
 
     $self->_merge_field_schema( $conf, {
         name  => 'email',
