@@ -72,11 +72,7 @@ sub create {
         	
         	
         	$self->app->log->info( "Sending registration email for [$u_data->{user_id}] to amin. Activation link [$activation_url]" );
-            $self->mail(
-                to      => $conf->{admin_email},
-                subject => "User [ $u_data->{user_id} ] activation",
-                data    => "To activate [$u_data->{user_id}] go to $activation_url",
-            );
+            $self->_send_activation_email($conf->{admin_email}, $activation_url, $u_data );
         } else {
             $u_data->{_is_activated_by_admin} = 1;	
         }
@@ -90,11 +86,7 @@ sub create {
             $u_data->{_activation_code_for_user} = $activation_code;
         
             $self->app->log->info( "Sending registration email for [$u_data->{user_id}] to [$u_data->{email}]. Activation link [$activation_url]" );
-            $self->mail(
-                to      => $u_data->{email},
-                subject => "User [ $u_data->{user_id} ] activation",
-                data    => "To activate [$u_data->{user_id}] go to $activation_url",
-            );
+            $self->_send_activation_email( $u_data->{email}, $activation_url, $u_data );
         } else {
         	$u_data->{_is_activated_by_user} = 1;
         }
@@ -278,6 +270,30 @@ sub _get_error_messages {
     my %errors = map { ("um_error_${_}" => $errors_hash->{$_} ) } keys %$errors_hash;
 
     return %errors;
+}
+
+sub _send_activation_email {
+    my ($self, $email, $activation_url, $u_data) = @_;
+    my $schema = $self->um_config->{fields};
+
+    my $user_info = "New user info:\n";
+
+    foreach my $field (@$schema) {
+        next if $field->{name} =~ /password/;
+
+        my $label = $field->{name};
+        my $value = $u_data->{$field->{name}} // '';
+
+        next unless $label && $value;
+
+        $user_info .= "$label: $value \n";
+    }
+
+    $self->mail(
+        to      => $email,
+        subject => "User [ $u_data->{user_id} ] activation",
+        data    => "To activate [$u_data->{user_id}] go to $activation_url \n\n $user_info",
+    );
 }
 
 
