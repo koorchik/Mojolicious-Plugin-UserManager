@@ -78,33 +78,42 @@ sub _check_user_password {
     my ( $self, $user_id, $password ) = @_;
     my $log = $self->app->log;
 
+    unless ($user_id) {
+        $log->debug("AUTH FAILED: No user_id");
+        return 0;
+    }
+
+    unless ($password) {
+        $log->debug("AUTH FAILED: user_id=[$user_id]. Empty password.");
+        return 0;
+    }
+
     local $Data::Dumper::Indent = 0; 
-    $log->debug("AUTH: Login attempt user_id=[$user_id]" . Dumper($self->session) );
-    
-    return 0 unless $user_id && $password;
+    $log->debug("AUTH DEBUG: Login attempt user_id=[$user_id]" . Dumper($self->session) );
 
     my $config  = $self->um_config;
     my $storage = $self->um_storage;
 
-    $log->debug("AUTH: Getting user data user_id=[$user_id]");
+    $log->debug("AUTH DEBUG: Getting data for user_id=[$user_id]");
     
     my $user_data = eval { $storage->get($user_id) };
 
     unless( $user_data && exists $user_data->{password} ) {
-        $log->debug("AUTH: No user data user_id=[$user_id]");
+        $log->debug("AUTH FAILED: No data for user_id=[$user_id]");
         return 0;     
     }
     
     if ( $config->{plain_auth} && $password eq $user_data->{password} ) {
-        $log->debug("AUTH: Success(plain) for user_id=[$user_id]");
+        $log->debug("AUTH SUCCESS: Plain password login for user_id=[$user_id]");
         return 1; 
     }
-    if ( $config->{password_crypter}->($password) eq $user_data->{password} ) {
-        $log->debug("AUTH: Success(crypted) for user_id=[$user_id]");
+
+    if ( $config->{password_crypter}->($password, $user_data) eq $user_data->{password} ) {
+        $log->debug("AUTH SUCCESS: Crypted password login for user_id=[$user_id]");
         return 1; 
     }
     
-    $self->app->log->debug("AUTH: Failed for user_id=[$user_id]");
+    $log->debug("AUTH FAILED: Wrong password for user_id=[$user_id]");
     return 0;
 }
 

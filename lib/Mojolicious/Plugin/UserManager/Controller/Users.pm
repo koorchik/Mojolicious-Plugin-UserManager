@@ -60,7 +60,7 @@ sub create {
 
         # Crypt password
         my $plain_password = $u_data->{password};
-        $u_data->{password} = $conf->{password_crypter}->( $plain_password );
+        $u_data->{password} = $conf->{password_crypter}->( $plain_password, $u_data );
 
         # Send confirmation  email to admin
         if ( $conf->{admin_confirm} ) {
@@ -142,7 +142,7 @@ sub update {
         # Crypt password
         my $new_pass = $self->param('password');
         if ($new_pass) {
-            $u_data->{password} = $conf->{password_crypter}->($new_pass);
+            $u_data->{password} = $conf->{password_crypter}->($new_pass, $u_data);
         } else {
             delete $u_data->{password};
         }
