@@ -122,7 +122,6 @@ sub update {
     my $u_data = $result->data;
 
     # Check passwords
-    my $is_password_error;
     if ( my $pass = $self->param('password') ) {
         if ( $pass ne $self->param('password2') ) {
             $self->flash( %$u_data, um_error => qq#Passwords do no coincide# );
@@ -134,6 +133,7 @@ sub update {
         # Crypt password
         my $new_pass = $self->param('password');
         if ($new_pass) {
+            $u_data->{user_id} = $self->stash('user_id');
             $u_data->{password} = $conf->{password_crypter}->($new_pass, $u_data);
         } else {
             delete $u_data->{password};
