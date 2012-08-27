@@ -244,7 +244,7 @@ sub autologin {
         
         # TODO move session update to Sessions controller
         $self->flash('um_notice' => 'Please, change your password');
-        $self->session( 'user_id' => $u_data->{user_id}, 'user_type' => $self->stash('user_type') );
+        $self->session( 'user_id' => $u_data->{user_id}, 'user_type' => $self->stash('user_type'), lifetime => (time + 3600) );
         $self->redirect_to('user_update_form', user_id => $u_data->{user_id});
     } else {
         $self->render_text("Wrong password recovery code");
